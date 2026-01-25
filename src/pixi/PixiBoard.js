@@ -2,9 +2,7 @@
 // mount(host) — создает app и монтирует canvas в host
 // destroy() — удаляет canvas, чтобы освободить ресурсы PixiJS
 
-
-import { Application } from 'pixi.js'
-import { Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 
 export class PixiBoard {
@@ -23,8 +21,8 @@ export class PixiBoard {
         this.initPromise = null; // обещание инициализации приложения(pixi еще загружается, т.е. ждем await)
 
         this.isPointerDown = false; // флаг состояния указателя (нажата ли кнопка мыши)
-        this.lastLocal = null; // последние локальные координаты указателя
-        this.lastGlobal = null; // последние глобальные координаты указателя
+
+        this.debugText = null; // текст для отладки     
     }
 
 
@@ -60,6 +58,16 @@ export class PixiBoard {
             // если все нормально, сохраняем ссылку на приложение
             this.app = app;
 
+            const style = new TextStyle({
+                fontSize: 16,
+                fill: '#ffffff',
+            });
+
+            this.debugText = new Text('debug info', style);
+            this.debugText.x = 12;
+            this.debugText.y = 12;
+            this.app.stage.addChild(this.debugText);
+
 
             // создаем слой для обработки ввода (ловит события указателя)
             this.inputLayer = new Container(); // создаем слой для обработки ввода
@@ -83,16 +91,16 @@ export class PixiBoard {
             this.inputLayer.on('pointerup', this.onPointerUp);
             this.inputLayer.on('pointerupoutside', this.onPointerUp);
 
-            
+
             // настраиваем стили для canvas, чтобы он занимал весь контейнер
             const canvas = app.canvas // получаем canvas из PixiJS Application
             canvas.style.display = 'block' // убираем отступы вокруг canvas
             canvas.style.width = '100%' // делаем canvas адаптивным по ширине
             canvas.style.height = '100%' // делаем canvas адаптивным по высоте
-            
+
             // сохраняем ссылки для дальнейшего использования
             this.canvas = canvas;
-            
+
             // добавляем canvas на страницу(т.е. в host элемент)
             this.host.appendChild(canvas)
 
@@ -160,10 +168,13 @@ export class PixiBoard {
         const global = e.global;
         const local = this.inputLayer.toLocal(global); // преобразуем глобальные координаты в локальные
 
-        this.lastGlobal = global;
-        this.lastLocal = local;
+        const gx = Math.round(global.x);
+        const gy = Math.round(global.y);
 
-        console.log('DOWN', { global: { x: global.x, y: global.y }, local: { x: local.x, y: local.y } });
+        const lx = Math.round(local.x);
+        const ly = Math.round(local.y);
+
+        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
     }
 
     // Обработчик движения указателя
@@ -171,19 +182,18 @@ export class PixiBoard {
         const global = e.global;
         const local = this.inputLayer.toLocal(global);
 
-        this.lastGlobal = global;
-        this.lastLocal = local;
+        const gx = Math.round(global.x);
+        const gy = Math.round(global.y);
 
-        if (this.isPointerDown) {
-            console.log('MOVE (drag)', { global: { x: global.x, y: global.y }, local: { x: local.x, y: local.y } });
-        } else {
-            console.log('MOVE', { global: { x: global.x, y: global.y }, local: { x: local.x, y: local.y } });
-        }
+        const lx = Math.round(local.x);
+        const ly = Math.round(local.y);
+
+        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
 
         if (this.cursorGraphics) {
             this.cursorGraphics.clear();
             // рисуем в global координатах (потому что cursorGfx на stage)
-            this.cursorGraphics.circle(global.x, global.y, 3).fill(0x58e000);
+            this.cursorGraphics.circle(gx, gy, 3).fill(0x58e000);
         }
 
     }
@@ -195,7 +205,14 @@ export class PixiBoard {
         const global = e.global;
         const local = this.inputLayer.toLocal(global);
 
-        console.log('UP', { global: { x: global.x, y: global.y }, local: { x: local.x, y: local.y } });
+        const gx = Math.round(global.x);
+        const gy = Math.round(global.y);
+
+        const lx = Math.round(local.x);
+        const ly = Math.round(local.y);
+
+        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
+
     }
 
 
@@ -238,16 +255,18 @@ export class PixiBoard {
             this.inputLayer = null;
         }
 
-
+        this.debugText?.destroy(); // уничтожаем текст отладки
+        
         this.canvas?.remove() // удаляем canvas с проверкой на существование
         this.app?.destroy(true) // уничтожаем PixiJS Application и освобождаем ресурсы
-
-
-
+        
+        
+        
         // очищаем ссылки
         this.app = null
         this.canvas = null
         this.host = null
+        this.debugText = null; // очищаем ссылку на текст отладки
     }
 
 

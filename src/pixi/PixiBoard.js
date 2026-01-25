@@ -22,7 +22,11 @@ export class PixiBoard {
 
         this.isPointerDown = false; // флаг состояния указателя (нажата ли кнопка мыши)
 
-        this.debugText = null; // текст для отладки     
+        this.debugText = null; // текст для отладки   
+
+        this.currentStroke = null;   // текущий штрих (массив точек) или null
+        this.strokes = [];           // список всех штрихов (массив массивов)
+        this.maxPoints = 5000;       // защита от бесконечного накопления в отладке
     }
 
 
@@ -174,7 +178,30 @@ export class PixiBoard {
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
 
-        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
+        // записываем точку с временной меткой(performance.now())
+        const t = performance.now();
+
+        // начинаем новый штрих (массив точек)
+        this.currentStroke = [{ x: local.x, y: local.y, t }];
+        // добавляем текущий штрих в список штрихов
+        this.strokes.push(this.currentStroke);
+
+
+        // защита от бесконечного накопления точек в отладке
+        if (this.strokes.length > 50) this.strokes.shift(); // ограничим историю
+
+
+        // если есть текущий штрих, добавляем в него последнюю точку, в обратном случае игнорируем
+        const strokePoints = this.currentStroke ? this.currentStroke.length : 0;
+        // количество всех штрихов на доске
+        const strokesCount = this.strokes.length;
+
+        this.debugText.text =
+            `global:${gx},${gy}\n` +
+            `local:${lx},${ly}\n` +
+            `down:${this.isPointerDown}\n` +
+            `strokePoints:${strokePoints}\n` +
+            `strokes:${strokesCount}`;
     }
 
     // Обработчик движения указателя
@@ -188,7 +215,28 @@ export class PixiBoard {
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
 
-        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
+        if (this.isPointerDown && this.currentStroke) {
+            // записываем точку с временной меткой(performance.now())
+            const t = performance.now();
+            // добавляем точку в текущий штрих (массив точек)
+            this.currentStroke.push({ x: local.x, y: local.y, t });
+            // защита от бесконечного накопления точек в отладке
+            if (this.currentStroke.length > this.maxPoints) {
+                this.currentStroke.shift(); // удаляем старые точки, если превышен лимит
+            }
+        }
+
+        // если есть текущий штрих, добавляем в него последнюю точку, в обратном случае игнорируем
+        const strokePoints = this.currentStroke ? this.currentStroke.length : 0;
+        // количество всех штрихов на доске
+        const strokesCount = this.strokes.length;
+
+        this.debugText.text =
+            `global:${gx},${gy}\n` +
+            `local:${lx},${ly}\n` +
+            `down:${this.isPointerDown}\n` +
+            `strokePoints:${strokePoints}\n` +
+            `strokes:${strokesCount}`;
 
         if (this.cursorGraphics) {
             this.cursorGraphics.clear();
@@ -211,8 +259,19 @@ export class PixiBoard {
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
 
-        this.debugText.text = `global:${gx},${gy}\nlocal:${lx},${ly}\ndown:${this.isPointerDown}`
+        // если есть текущий штрих, добавляем в него последнюю точку, в обратном случае игнорируем
+        const strokePoints = this.currentStroke ? this.currentStroke.length : 0;
+        // количество всех штрихов на доске
+        const strokesCount = this.strokes.length;
 
+        this.debugText.text =
+            `global:${gx},${gy}\n` +
+            `local:${lx},${ly}\n` +
+            `down:${this.isPointerDown}\n` +
+            `strokePoints:${strokePoints}\n` +
+            `strokes:${strokesCount}`;
+
+        this.currentStroke = null; // сбрасываем текущий штрих
     }
 
 
@@ -256,12 +315,12 @@ export class PixiBoard {
         }
 
         this.debugText?.destroy(); // уничтожаем текст отладки
-        
+
         this.canvas?.remove() // удаляем canvas с проверкой на существование
         this.app?.destroy(true) // уничтожаем PixiJS Application и освобождаем ресурсы
-        
-        
-        
+
+
+
         // очищаем ссылки
         this.app = null
         this.canvas = null

@@ -219,6 +219,11 @@ export class PixiBoard {
             `down:${this.isPointerDown}\n` +
             `strokePoints:${strokePoints}\n` +
             `strokes:${strokesCount}`;
+
+        if (e.button === 2) { // ПКМ
+            this.clear();
+            return;
+        }
     }
 
     // Обработчик движения указателя
@@ -319,6 +324,17 @@ export class PixiBoard {
         this.currentStroke = null; // сбрасываем текущий штрих
     }
 
+    // Метод для очистки доски от всех штрихов
+    clear() {
+        // удаляем все нарисованные штрихи
+        this.drawLayer?.removeChildren();
+
+        // сбрасываем данные
+        this.strokes = [];
+        this.currentStroke = null;
+        this.activeStrokeGrafics = null;
+    }
+
 
 
     destroy() {
@@ -362,7 +378,11 @@ export class PixiBoard {
         this.debugText?.destroy(); // уничтожаем текст отладки
         this.drawLayer?.destroy({ children: true }); // уничтожаем слой рисования вместе с его детьми(штрихами)
         this.canvas?.remove() // удаляем canvas с проверкой на существование
-        this.app?.destroy(true) // уничтожаем PixiJS Application и освобождаем ресурсы
+        // уничтожаем PixiJS Application и освобождаем ресурсы
+        this.app?.destroy(
+            { removeView: true, releaseGlobalResources: false },
+            { children: true }
+        );
 
 
 

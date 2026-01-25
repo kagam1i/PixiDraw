@@ -27,6 +27,10 @@ export class PixiBoard {
         this.currentStroke = null;   // текущий штрих (массив точек) или null
         this.strokes = [];           // список всех штрихов (массив массивов)
         this.maxPoints = 5000;       // защита от бесконечного накопления в отладке
+
+
+        this.activeStrokeGrafics = null; // Graphics текущего (рисуемого) штриха
+        this.drawLayer = null;       // контейнер, куда складываем готовые штрихи
     }
 
 
@@ -73,6 +77,11 @@ export class PixiBoard {
             this.app.stage.addChild(this.debugText);
 
 
+            // создаем слой для готовых штрихов(контейнер, куда складываем готовые штрихи)
+            this.drawLayer = new Container();
+            this.app.stage.addChild(this.drawLayer); // добавляем слой рисования на сцену
+
+
             // создаем слой для обработки ввода (ловит события указателя)
             this.inputLayer = new Container(); // создаем слой для обработки ввода
             this.inputLayer.eventMode = 'static'; // включаем обработку событий
@@ -80,9 +89,11 @@ export class PixiBoard {
             this.app.stage.addChild(this.inputLayer); // добавляем слой ввода на сцену(чтобы он был поверх других слоев)
 
 
+
             // создаем графику для курсора (точка, рисуемая при движении мыши)
             this.cursorGraphics = new Graphics(); // создаем графику для курсора
             this.inputLayer.addChild(this.cursorGraphics); // добавляем графику курсора на слой ввода
+
 
             // добавляем подписки на события указателя(т.е. если пользователь кликает или двигает мышью, то вызываются соответствующие методы)
             this.onPointerDown = (e) => this._handlePointerDown(e);
@@ -172,6 +183,12 @@ export class PixiBoard {
         const global = e.global;
         const local = this.inputLayer.toLocal(global); // преобразуем глобальные координаты в локальные
 
+        // создаем новую графику для текущего штриха
+        this.activeStrokeGrafics = new Graphics();
+        this.drawLayer.addChild(this.activeStrokeGrafics); // добавляем графику штриха на слой рисования
+
+        this.activeStrokeGrafics.circle(local.x, local.y, 2).fill(0x58e000); // рисуем первую точку штриха
+
         const gx = Math.round(global.x);
         const gy = Math.round(global.y);
 
@@ -244,6 +261,33 @@ export class PixiBoard {
             this.cursorGraphics.circle(gx, gy, 3).fill(0x58e000);
         }
 
+        // если сейчас НЕ рисуем — ничего не строим линией
+        if (!this.isPointerDown || !this.currentStroke || !this.activeStrokeGrafics) {
+            return;
+        }
+
+        // очищаем графику текущего штриха
+        this.activeStrokeGrafics.clear();
+
+        // настраиваем стиль линии для текущего штриха
+        this.activeStrokeGrafics.setStrokeStyle({
+            width: 3,
+            color: 0x58e000,
+            cap: 'round',
+            join: 'round',
+        })
+        // cоздаем линию по точкам текущего штриха
+        const points = this.currentStroke;
+        // рисуем линию по точкам штриха
+        this.activeStrokeGrafics.moveTo(points[0].x, points[0].y);
+        // продолжаем линию по всем точкам
+        for (let i = 1; i < points.length; i++) {
+            this.activeStrokeGrafics.lineTo(points[i].x, points[i].y);
+        }
+        this.activeStrokeGrafics.stroke();
+
+
+
     }
 
     // Обработчик отпускания указателя
@@ -271,6 +315,7 @@ export class PixiBoard {
             `strokePoints:${strokePoints}\n` +
             `strokes:${strokesCount}`;
 
+        this.activeStrokeGrafics = null; // сбрасываем графику текущего штриха
         this.currentStroke = null; // сбрасываем текущий штрих
     }
 
@@ -315,7 +360,7 @@ export class PixiBoard {
         }
 
         this.debugText?.destroy(); // уничтожаем текст отладки
-
+        this.drawLayer?.destroy({ children: true }); // уничтожаем слой рисования вместе с его детьми(штрихами)
         this.canvas?.remove() // удаляем canvas с проверкой на существование
         this.app?.destroy(true) // уничтожаем PixiJS Application и освобождаем ресурсы
 
@@ -326,6 +371,8 @@ export class PixiBoard {
         this.canvas = null
         this.host = null
         this.debugText = null; // очищаем ссылку на текст отладки
+        this.drawLayer = null; // очищаем ссылку на слой рисования
+        this.activeStrokeGrafics = null; // очищаем ссылку на графику текущего штриха
     }
 
 

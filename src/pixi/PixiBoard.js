@@ -31,6 +31,8 @@ export class PixiBoard {
 
         this.activeStrokeGrafics = null; // Graphics текущего (рисуемого) штриха
         this.drawLayer = null;       // контейнер, куда складываем готовые штрихи
+
+        this.mode = 'draw'; // режим доски: 'draw' — рисование, 'erase' — стирание
     }
 
 
@@ -58,8 +60,8 @@ export class PixiBoard {
 
             // проверяем, не был ли вызван destroy во время инициализации
             if (this.destroyRequested) {
-                // если во время инициализации был вызван destroy, то сразу уничтожаем приложение и выходим
-                app.destroy(true);
+                // если был вызван destroy, уничтожаем приложение сразу и выходим
+                app.destroy({ removeView: true, releaseGlobalResources: false }, { children: true })
                 return;
             }
 
@@ -220,6 +222,9 @@ export class PixiBoard {
             `strokePoints:${strokePoints}\n` +
             `strokes:${strokesCount}`;
 
+        // если режим доски не рисование, выходим
+        if (this.mode !== 'draw') return;
+
         if (e.button === 2) { // ПКМ
             this.clear();
             return;
@@ -271,6 +276,8 @@ export class PixiBoard {
             return;
         }
 
+
+
         // очищаем графику текущего штриха
         this.activeStrokeGrafics.clear();
 
@@ -291,7 +298,8 @@ export class PixiBoard {
         }
         this.activeStrokeGrafics.stroke();
 
-
+        // если режим доски не рисование, выходим
+        if (this.mode !== 'draw') return;
 
     }
 
@@ -333,6 +341,11 @@ export class PixiBoard {
         this.strokes = [];
         this.currentStroke = null;
         this.activeStrokeGrafics = null;
+    }
+
+    // Метод для установки режима доски
+    setMode(mode) {
+        this.mode = mode; // устанавливаем режим доски
     }
 
 

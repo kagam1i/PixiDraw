@@ -295,7 +295,7 @@ export class PixiBoard {
         if (this.cursorGraphics) {
             this.cursorGraphics.clear();
             // рисуем курсор в новых координатах, также учитывая размер кисти
-            this.cursorGraphics.circle(gx, gy, Math.max(2, size / 2)).fill(color);
+            this.cursorGraphics.circle(local.x, local.y, Math.max(2, size / 2)).fill(color);
         }
 
         // если сейчас yt рисуем — ничего не строим линией
@@ -378,6 +378,18 @@ export class PixiBoard {
     // Метод для установки инструмента (рисование или ластик)
     setTool(tool) {
         this.setMode(tool);
+    }
+
+    // Метод для установки размера кисти/ластика
+    setToolSize(size) {
+        this.brushSize = size;
+        this.eraserSize = size; // ластик обычно толще
+    }
+
+    // Метод для установки цвета кисти
+    setBrushColor(color) {
+        if (typeof color !== 'number') return;
+        this.brushColor = color;
     }
 
 

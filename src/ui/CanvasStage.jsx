@@ -6,7 +6,11 @@ import { Toolbar } from './Toolbar'
 export const CanvasStage = () => {
 
     const [tool, setTool] = useState('draw') // режим доски: 'draw' — рисование, 'erase' — ластик
+    const [size, setSize] = useState(8) // размер кисти/ластика
+    const [brushColor, setBrushColor] = useState(0x000000) // цвет кисти (черный по умолчанию)
 
+    const hostRef = useRef(null) // зафиксируем div контейнер для canvas
+    const boardRef = useRef(null) // зафиксируем экземпляр PixiBoard
 
     // выбор инструмента (переключение между рисованием и ластиком)
     const handleSelectTool = (nextTool) => {
@@ -21,8 +25,16 @@ export const CanvasStage = () => {
         }
     }
 
-    const hostRef = useRef(null) // зафиксируем div контейнер для canvas
-    const boardRef = useRef(null) // зафиксируем экземпляр PixiBoard
+    // изменение размера кисти/ластика
+    const handleSizeChange = (nextSize) => {
+        setSize(nextSize)
+    }
+
+    // изменение цвета кисти
+    const handleBrushColorChange = (nextColor) => {
+        setBrushColor(nextColor)
+    }
+
 
     // инициализация PixiBoard при монтировании CanvasStage
     useEffect(() => {
@@ -47,12 +59,32 @@ export const CanvasStage = () => {
         }
     }, [tool])
 
+    // обновление размера кисти/ластика в PixiBoard при изменении состояния size
+    useEffect(() => {
+        if (boardRef.current) {
+            boardRef.current.setToolSize(size)
+        }
+    }, [size])
+
+    // обновление цвета кисти в PixiBoard при изменении состояния brushColor
+    useEffect(() => {
+        if (boardRef.current) {
+            boardRef.current.setBrushColor(brushColor)
+        }
+    }, [brushColor])
+
+
     return (
         <div className='flex h-full w-full flex-col bg-bg overflow-hidden'>
             <Toolbar
                 tool={tool}
                 onSelectTool={handleSelectTool}
                 onClear={handleClear}
+                size={size}
+                onSizeChange={handleSizeChange}
+                brushColor={brushColor}
+                onBrushColorChange={handleBrushColorChange}
+
             />
 
             <div className='relative flex-1 bg-white'>

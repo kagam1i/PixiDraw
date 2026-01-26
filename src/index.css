@@ -13,3 +13,59 @@ body {
   background: #0b0f14;
   color: #ffffff;
 }
+
+
+/* Paint-like range slider (gray version) */
+.paint-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  background: #e5e7eb;
+}
+
+/* WebKit track */
+.paint-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #7f7f7f 0%,
+    #7f7f7f var(--fill, 50%),
+    #e5e7eb var(--fill, 50%),
+    #e5e7eb 100%
+  );
+}
+
+/* WebKit thumb */
+.paint-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #7f7f7f;          /* ← серый бегунок */
+  border: 2px solid #f9fafb;    /* тонкое светлое кольцо */
+  margin-top: -4px;
+}
+
+/* Firefox */
+.paint-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+}
+.paint-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: #7f7f7f;          /* ← серый fill */
+}
+.paint-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #7f7f7f;          /* ← серый бегунок */
+  border: 2px solid #f9fafb;
+}

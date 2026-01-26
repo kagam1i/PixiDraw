@@ -32,7 +32,7 @@ export class PixiBoard {
         this.activeStrokeGrafics = null; // Graphics текущего (рисуемого) штриха
         this.drawLayer = null;       // контейнер, куда складываем готовые штрихи
 
-        this.mode = 'draw'; // режим доски: 'draw' — рисование, 'erase' — стирание
+        this.mode = 'draw'; // режим доски: 'draw' — рисование, 'idle' — без рисования
     }
 
 
@@ -182,32 +182,16 @@ export class PixiBoard {
     _handlePointerDown(e) {
         this.isPointerDown = true;
 
+        // получаем глобальные и локальные координаты указателя
         const global = e.global;
         const local = this.inputLayer.toLocal(global); // преобразуем глобальные координаты в локальные
 
-        // создаем новую графику для текущего штриха
-        this.activeStrokeGrafics = new Graphics();
-        this.drawLayer.addChild(this.activeStrokeGrafics); // добавляем графику штриха на слой рисования
 
-        this.activeStrokeGrafics.circle(local.x, local.y, 2).fill(0x58e000); // рисуем первую точку штриха
-
+        // округляем координаты для отладки
         const gx = Math.round(global.x);
         const gy = Math.round(global.y);
-
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
-
-        // записываем точку с временной меткой(performance.now())
-        const t = performance.now();
-
-        // начинаем новый штрих (массив точек)
-        this.currentStroke = [{ x: local.x, y: local.y, t }];
-        // добавляем текущий штрих в список штрихов
-        this.strokes.push(this.currentStroke);
-
-
-        // защита от бесконечного накопления точек в отладке
-        if (this.strokes.length > 50) this.strokes.shift(); // ограничим историю
 
 
         // если есть текущий штрих, добавляем в него последнюю точку, в обратном случае игнорируем
@@ -222,23 +206,41 @@ export class PixiBoard {
             `strokePoints:${strokePoints}\n` +
             `strokes:${strokesCount}`;
 
+
         // если режим доски не рисование, выходим
         if (this.mode !== 'draw') return;
 
-        if (e.button === 2) { // ПКМ
-            this.clear();
-            return;
-        }
+
+        // создаем новую графику для текущего штриха
+        this.activeStrokeGrafics = new Graphics();
+        this.drawLayer.addChild(this.activeStrokeGrafics); // добавляем графику штриха на слой рисования
+
+        // настраиваем стиль линии для текущего штриха
+        this.activeStrokeGrafics.circle(local.x, local.y, 2).fill(0x58e000); // рисуем первую точку штриха
+
+
+        // записываем точку с временной меткой(performance.now())
+        const t = performance.now();
+        // начинаем новый штрих (массив точек)
+        this.currentStroke = [{ x: local.x, y: local.y, t }];
+        // добавляем текущий штрих в список штрихов
+        this.strokes.push(this.currentStroke);
+
+
+        // защита от бесконечного накопления точек в отладке
+        if (this.strokes.length > 50) this.strokes.shift();
     }
 
     // Обработчик движения указателя
     _handlePointerMove(e) {
+        // получаем глобальные и локальные координаты указателя
         const global = e.global;
         const local = this.inputLayer.toLocal(global);
 
+
+        // округляем координаты для отладки
         const gx = Math.round(global.x);
         const gy = Math.round(global.y);
-
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
 
@@ -265,6 +267,10 @@ export class PixiBoard {
             `strokePoints:${strokePoints}\n` +
             `strokes:${strokesCount}`;
 
+
+        // если режим доски не рисование, выходим
+        if (this.mode !== 'draw') return;
+
         if (this.cursorGraphics) {
             this.cursorGraphics.clear();
             // рисуем в global координатах (потому что cursorGfx на stage)
@@ -275,8 +281,6 @@ export class PixiBoard {
         if (!this.isPointerDown || !this.currentStroke || !this.activeStrokeGrafics) {
             return;
         }
-
-
 
         // очищаем графику текущего штриха
         this.activeStrokeGrafics.clear();
@@ -298,8 +302,6 @@ export class PixiBoard {
         }
         this.activeStrokeGrafics.stroke();
 
-        // если режим доски не рисование, выходим
-        if (this.mode !== 'draw') return;
 
     }
 

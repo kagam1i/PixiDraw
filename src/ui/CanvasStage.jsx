@@ -1,26 +1,65 @@
 // создание холста для рисования
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PixiBoard } from '../pixi/PixiBoard'
+import { Toolbar } from './Toolbar'
 
 export const CanvasStage = () => {
 
+    const [mode, setMode] = useState('draw') // режим доски: 'draw' — рисование, 'idle' — бездействие
+
+    
+    // переключение режима доски между 'draw' и 'idle'
+    const handleToggleMode = () => {    
+        setMode(mode => (mode === 'draw' ? 'idle' : 'draw'))
+    }
+    
+    // очистка доски
+    const handleClear = () => {
+        // очищаем доску через метод PixiBoard
+        if (boardRef.current) {
+            boardRef.current.clear()
+        }
+    }
+    
     const hostRef = useRef(null) // зафиксируем div контейнер для canvas
     const boardRef = useRef(null) // зафиксируем экземпляр PixiBoard
 
+    // инициализация PixiBoard при монтировании CanvasStage
     useEffect(() => {
         // создаем новый экземпляр PixiBoard
-        boardRef.current = new PixiBoard();
+        boardRef.current = new PixiBoard()
+
         // монтируем PixiBoard в div контейнер при первом рендере
         boardRef.current.mount(hostRef.current)
-        // когда CanvasStage размонтируется, удаляем PixiBoard
+
+        // когда CanvasStage размонтируется, удаляем PixiBoard и очищаем ссылку
         return () => {
-            boardRef.current.destroy()
+            boardRef.current?.destroy()
+            boardRef.current = null
         }
     }, [])
 
-  return (
-    <div className='w-full h-full bg-surface'>
-        <div ref={hostRef} className='w-full h-full overflow-hidden'></div>
-    </div>
-  )
+    // обновление режима доски в PixiBoard при изменении состояния mode
+    useEffect(() => {
+        // при изменении режима обновляем режим доски в PixiBoard
+        if (boardRef.current) {
+            boardRef.current.setMode(mode)
+        }
+    }, [mode])
+
+    return (
+        <div className='relative w-full h-full bg-surface overflow-hidden'>
+            {/* слой для Pixi canvas */}
+            <div ref={hostRef} className='absolute inset-0' />
+
+            {/* Toolbar поверх canvas (overlay) */}
+            <div className='absolute left-3 top-3 z-20 pointer-events-auto'>
+                <Toolbar
+                    mode={mode}
+                    onToggleMode={handleToggleMode}
+                    onClear={handleClear}
+                />
+            </div>
+        </div>
+    )
 }

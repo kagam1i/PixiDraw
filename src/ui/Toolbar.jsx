@@ -6,9 +6,9 @@ export const Toolbar = ({ tool, onSelectTool, onClear }) => {
         onClick={() => onSelectTool('draw')}
         className={
           'rounded-md px-3 py-1.5 text-sm transition ' +
-          'hover:bg-surface hover:text-text active:scale-[0.97] ' +
+          'hover:bg-surface hover:text-text active:bg-surface active:text-text ' +
           (tool === 'draw'
-            ? 'bg-surface text-text shadow-sm'
+            ? 'bg-surface text-text'
             : 'text-textMuted')
         }
       >
@@ -20,9 +20,9 @@ export const Toolbar = ({ tool, onSelectTool, onClear }) => {
         onClick={() => onSelectTool('erase')}
         className={
           'rounded-md px-3 py-1.5 text-sm transition ' +
-          'hover:bg-surface hover:text-text active:scale-[0.97] ' +
+          'hover:bg-surface hover:text-text active:bg-surface active:text-text ' +
           (tool === 'erase'
-            ? 'bg-surface text-text shadow-sm'
+            ? 'bg-surface text-text'
             : 'text-textMuted')
         }
       >
@@ -34,7 +34,7 @@ export const Toolbar = ({ tool, onSelectTool, onClear }) => {
       <button
         type="button"
         onClick={onClear}
-        className="rounded-md px-3 py-1.5 text-sm text-textMuted transition hover:bg-surface hover:text-text active:scale-[0.97]"
+        className="rounded-md px-3 py-1.5 text-sm text-textMuted transition hover:bg-surface hover:text-text active:bg-surface active:text-text"
       >
         Clear
       </button>

@@ -48,17 +48,15 @@ export const CanvasStage = () => {
     }, [tool])
 
     return (
-        <div className='relative w-full h-full bg-surface overflow-hidden'>
-            {/* слой для Pixi canvas */}
-            <div ref={hostRef} className='absolute inset-0' />
+        <div className='flex h-full w-full flex-col bg-bg overflow-hidden'>
+            <Toolbar
+                tool={tool}
+                onSelectTool={handleSelectTool}
+                onClear={handleClear}
+            />
 
-            {/* Toolbar поверх canvas (overlay) */}
-            <div className='absolute left-3 top-3 z-20 pointer-events-auto'>
-                <Toolbar
-                    tool={tool}
-                    onSelectTool={handleSelectTool}
-                    onClear={handleClear}
-                />
+            <div className='relative flex-1 bg-white'>
+                <div ref={hostRef} className='absolute inset-0' />
             </div>
         </div>
     )

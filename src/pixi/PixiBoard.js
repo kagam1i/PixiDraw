@@ -22,7 +22,7 @@ export class PixiBoard {
 
         this.isPointerDown = false; // флаг состояния указателя (нажата ли кнопка мыши)
 
-        this.debugText = null; // текст для отладки   
+        // this.debugText = null; // текст для отладки   
 
         this.currentStroke = null;   // текущий штрих (массив точек) или null
         this.strokes = [];           // список всех штрихов (массив массивов)
@@ -32,7 +32,12 @@ export class PixiBoard {
         this.activeStrokeGrafics = null; // Graphics текущего (рисуемого) штриха
         this.drawLayer = null;       // контейнер, куда складываем готовые штрихи
 
-        this.mode = 'draw'; // режим доски: 'draw' — рисование, 'idle' — без рисования
+        this.mode = 'draw'; // // режим доски: 'draw' — рисование, 'erase' — ластик
+
+        this.brushColor = 0x000000; // по умолчанию рисуем чёрным
+        this.brushSize = 3;         // базовая толщина (позже сделаем 3 значения из React)
+        this.boardColor = 0xFFFFFF; // цвет доски (белая)
+        this.eraserSize = 12;       // ластик обычно толще (можешь поставить 10-16)
     }
 
 
@@ -73,10 +78,11 @@ export class PixiBoard {
                 fill: '#ffffff',
             });
 
-            this.debugText = new Text('debug info', style);
-            this.debugText.x = 12;
-            this.debugText.y = 12;
-            this.app.stage.addChild(this.debugText);
+            // // создаем текст для отладки
+            // this.debugText = new Text('debug info', style);
+            // this.debugText.x = 12;
+            // this.debugText.y = 12;
+            // this.app.stage.addChild(this.debugText);
 
 
             // создаем слой для готовых штрихов(контейнер, куда складываем готовые штрихи)
@@ -199,16 +205,23 @@ export class PixiBoard {
         // количество всех штрихов на доске
         const strokesCount = this.strokes.length;
 
-        this.debugText.text =
-            `global:${gx},${gy}\n` +
-            `local:${lx},${ly}\n` +
-            `down:${this.isPointerDown}\n` +
-            `strokePoints:${strokePoints}\n` +
-            `strokes:${strokesCount}`;
+        // // обновляем отладочный текст
+        // this.debugText.text =
+        //     `global:${gx},${gy}\n` +
+        //     `local:${lx},${ly}\n` +
+        //     `down:${this.isPointerDown}\n` +
+        //     `strokePoints:${strokePoints}\n` +
+        //     `strokes:${strokesCount}`;
 
 
         // если режим доски не рисование, выходим
-        if (this.mode !== 'draw') return;
+        if (this.mode !== 'draw' && this.mode !== 'erase') return;
+
+
+        // получаем цвет и размер в зависимости от режима доски 
+        const isErase = this.mode === 'erase';
+        const color = isErase ? this.boardColor : this.brushColor;
+        const size = isErase ? this.eraserSize : this.brushSize;
 
 
         // создаем новую графику для текущего штриха
@@ -216,7 +229,7 @@ export class PixiBoard {
         this.drawLayer.addChild(this.activeStrokeGrafics); // добавляем графику штриха на слой рисования
 
         // настраиваем стиль линии для текущего штриха
-        this.activeStrokeGrafics.circle(local.x, local.y, 2).fill(0x58e000); // рисуем первую точку штриха
+        this.activeStrokeGrafics.circle(local.x, local.y, Math.max(1, size / 2)).fill(color); // рисуем первую точку штриха
 
 
         // записываем точку с временной меткой(performance.now())
@@ -249,7 +262,7 @@ export class PixiBoard {
             const t = performance.now();
             // добавляем точку в текущий штрих (массив точек)
             this.currentStroke.push({ x: local.x, y: local.y, t });
-            // защита от бесконечного накопления точек в отладке
+            // защита от бесконечного накопления в отладке
             if (this.currentStroke.length > this.maxPoints) {
                 this.currentStroke.shift(); // удаляем старые точки, если превышен лимит
             }
@@ -260,24 +273,32 @@ export class PixiBoard {
         // количество всех штрихов на доске
         const strokesCount = this.strokes.length;
 
-        this.debugText.text =
-            `global:${gx},${gy}\n` +
-            `local:${lx},${ly}\n` +
-            `down:${this.isPointerDown}\n` +
-            `strokePoints:${strokePoints}\n` +
-            `strokes:${strokesCount}`;
+
+        // // обновляем отладочный текст
+        // this.debugText.text =
+        //     `global:${gx},${gy}\n` +
+        //     `local:${lx},${ly}\n` +
+        //     `down:${this.isPointerDown}\n` +
+        //     `strokePoints:${strokePoints}\n` +
+        //     `strokes:${strokesCount}`;
 
 
         // если режим доски не рисование, выходим
-        if (this.mode !== 'draw') return;
+        if (this.mode !== 'draw' && this.mode !== 'erase') return;
 
+        // получаем цвет и размер в зависимости от режима доски
+        const isErase = this.mode === 'erase';
+        const color = isErase ? this.boardColor : this.brushColor;
+        const size = isErase ? this.eraserSize : this.brushSize;
+
+        // обновляем графику курсора (рисуем точку в новых координатах)
         if (this.cursorGraphics) {
             this.cursorGraphics.clear();
-            // рисуем в global координатах (потому что cursorGfx на stage)
-            this.cursorGraphics.circle(gx, gy, 3).fill(0x58e000);
+            // рисуем курсор в новых координатах, также учитывая размер кисти
+            this.cursorGraphics.circle(gx, gy, Math.max(2, size / 2)).fill(color);
         }
 
-        // если сейчас НЕ рисуем — ничего не строим линией
+        // если сейчас yt рисуем — ничего не строим линией
         if (!this.isPointerDown || !this.currentStroke || !this.activeStrokeGrafics) {
             return;
         }
@@ -287,8 +308,8 @@ export class PixiBoard {
 
         // настраиваем стиль линии для текущего штриха
         this.activeStrokeGrafics.setStrokeStyle({
-            width: 3,
-            color: 0x58e000,
+            width: size,
+            color: color,
             cap: 'round',
             join: 'round',
         })
@@ -307,8 +328,10 @@ export class PixiBoard {
 
     // Обработчик отпускания указателя
     _handlePointerUp(e) {
+        // сбрасываем флаг нажатия указателя
         this.isPointerDown = false;
 
+        // получаем глобальные и локальные координаты указателя
         const global = e.global;
         const local = this.inputLayer.toLocal(global);
 
@@ -323,12 +346,13 @@ export class PixiBoard {
         // количество всех штрихов на доске
         const strokesCount = this.strokes.length;
 
-        this.debugText.text =
-            `global:${gx},${gy}\n` +
-            `local:${lx},${ly}\n` +
-            `down:${this.isPointerDown}\n` +
-            `strokePoints:${strokePoints}\n` +
-            `strokes:${strokesCount}`;
+        // // обновляем отладочный текст
+        // this.debugText.text =
+        //     `global:${gx},${gy}\n` +
+        //     `local:${lx},${ly}\n` +
+        //     `down:${this.isPointerDown}\n` +
+        //     `strokePoints:${strokePoints}\n` +
+        //     `strokes:${strokesCount}`;
 
         this.activeStrokeGrafics = null; // сбрасываем графику текущего штриха
         this.currentStroke = null; // сбрасываем текущий штрих
@@ -345,11 +369,16 @@ export class PixiBoard {
         this.activeStrokeGrafics = null;
     }
 
-    // Метод для установки режима доски
+    // Метод для установки режима доски (рисование или ластик)
     setMode(mode) {
-        this.mode = mode; // устанавливаем режим доски
+        if (mode !== 'draw' && mode !== 'erase') return;
+        this.mode = mode;
     }
 
+    // Метод для установки инструмента (рисование или ластик)
+    setTool(tool) {
+        this.setMode(tool);
+    }
 
 
     destroy() {
@@ -390,7 +419,7 @@ export class PixiBoard {
             this.inputLayer = null;
         }
 
-        this.debugText?.destroy(); // уничтожаем текст отладки
+        // this.debugText?.destroy(); // уничтожаем текст отладки
         this.drawLayer?.destroy({ children: true }); // уничтожаем слой рисования вместе с его детьми(штрихами)
         this.canvas?.remove() // удаляем canvas с проверкой на существование
         // уничтожаем PixiJS Application и освобождаем ресурсы
@@ -399,17 +428,13 @@ export class PixiBoard {
             { children: true }
         );
 
-
-
         // очищаем ссылки
         this.app = null
         this.canvas = null
         this.host = null
-        this.debugText = null; // очищаем ссылку на текст отладки
+        // this.debugText = null; // очищаем ссылку на текст отладки
         this.drawLayer = null; // очищаем ссылку на слой рисования
         this.activeStrokeGrafics = null; // очищаем ссылку на графику текущего штриха
     }
-
-
 
 }

@@ -5,14 +5,14 @@ import { Toolbar } from './Toolbar'
 
 export const CanvasStage = () => {
 
-    const [mode, setMode] = useState('draw') // режим доски: 'draw' — рисование, 'idle' — бездействие
+    const [tool, setTool] = useState('draw') // режим доски: 'draw' — рисование, 'erase' — ластик
 
-    
-    // переключение режима доски между 'draw' и 'idle'
-    const handleToggleMode = () => {    
-        setMode(mode => (mode === 'draw' ? 'idle' : 'draw'))
+
+    // выбор инструмента (переключение между рисованием и ластиком)
+    const handleSelectTool = (nextTool) => {
+        setTool(nextTool)
     }
-    
+
     // очистка доски
     const handleClear = () => {
         // очищаем доску через метод PixiBoard
@@ -20,7 +20,7 @@ export const CanvasStage = () => {
             boardRef.current.clear()
         }
     }
-    
+
     const hostRef = useRef(null) // зафиксируем div контейнер для canvas
     const boardRef = useRef(null) // зафиксируем экземпляр PixiBoard
 
@@ -43,9 +43,9 @@ export const CanvasStage = () => {
     useEffect(() => {
         // при изменении режима обновляем режим доски в PixiBoard
         if (boardRef.current) {
-            boardRef.current.setMode(mode)
+            boardRef.current.setTool(tool)
         }
-    }, [mode])
+    }, [tool])
 
     return (
         <div className='relative w-full h-full bg-surface overflow-hidden'>
@@ -55,8 +55,8 @@ export const CanvasStage = () => {
             {/* Toolbar поверх canvas (overlay) */}
             <div className='absolute left-3 top-3 z-20 pointer-events-auto'>
                 <Toolbar
-                    mode={mode}
-                    onToggleMode={handleToggleMode}
+                    tool={tool}
+                    onSelectTool={handleSelectTool}
                     onClear={handleClear}
                 />
             </div>

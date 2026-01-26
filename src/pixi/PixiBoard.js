@@ -2,7 +2,7 @@
 // mount(host) — создает app и монтирует canvas в host
 // destroy() — удаляет canvas, чтобы освободить ресурсы PixiJS
 
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 
 
 export class PixiBoard {
@@ -13,6 +13,8 @@ export class PixiBoard {
         this.resizeObserver = null // ссылка на ResizeObserver(отслеживает размер контейнера)
         this.inputLayer = null; // слой для обработки ввода(ловит события указателя)
         this.cursorGraphics = null; // графика курсора(грубо говоря точка, рисуемая при движении мыши)
+
+        this.lastCursorPos = null; // последняя позиция курсора (для обновления при смене tool/size)
 
         this.isMounting = false // флаг процесса монтирования
 
@@ -73,10 +75,10 @@ export class PixiBoard {
             // если все нормально, сохраняем ссылку на приложение
             this.app = app;
 
-            const style = new TextStyle({
-                fontSize: 16,
-                fill: '#ffffff',
-            });
+            // const style = new TextStyle({
+            //     fontSize: 16,
+            //     fill: '#ffffff',
+            // });
 
             // // создаем текст для отладки
             // this.debugText = new Text('debug info', style);
@@ -223,6 +225,9 @@ export class PixiBoard {
         const color = isErase ? this.boardColor : this.brushColor;
         const size = isErase ? this.eraserSize : this.brushSize;
 
+        //запоминаем последнюю позицию курсора и перерисовываем курсор
+        this.lastCursorPos = { x: local.x, y: local.y };
+        this._renderCursor(local.x, local.y);
 
         // создаем новую графику для текущего штриха
         this.activeStrokeGrafics = new Graphics();
@@ -256,6 +261,10 @@ export class PixiBoard {
         const gy = Math.round(global.y);
         const lx = Math.round(local.x);
         const ly = Math.round(local.y);
+
+        // сохраняем последнюю позицию и рисуем курсор-точку
+        this.lastCursorPos = { x: local.x, y: local.y };
+        this._renderCursor(local.x, local.y);
 
         if (this.isPointerDown && this.currentStroke) {
             // записываем точку с временной меткой(performance.now())
@@ -291,13 +300,6 @@ export class PixiBoard {
         const color = isErase ? this.boardColor : this.brushColor;
         const size = isErase ? this.eraserSize : this.brushSize;
 
-        // обновляем графику курсора (рисуем точку в новых координатах)
-        if (this.cursorGraphics) {
-            this.cursorGraphics.clear();
-            // рисуем курсор в новых координатах, также учитывая размер кисти
-            this.cursorGraphics.circle(local.x, local.y, Math.max(2, size / 2)).fill(color);
-        }
-
         // если сейчас yt рисуем — ничего не строим линией
         if (!this.isPointerDown || !this.currentStroke || !this.activeStrokeGrafics) {
             return;
@@ -322,8 +324,6 @@ export class PixiBoard {
             this.activeStrokeGrafics.lineTo(points[i].x, points[i].y);
         }
         this.activeStrokeGrafics.stroke();
-
-
     }
 
     // Обработчик отпускания указателя
@@ -373,6 +373,9 @@ export class PixiBoard {
     setMode(mode) {
         if (mode !== 'draw' && mode !== 'erase') return;
         this.mode = mode;
+
+        // обновляем курсор даже без движения мыши
+        this._refreshCursorIfPossible();
     }
 
     // Метод для установки инструмента (рисование или ластик)
@@ -383,16 +386,76 @@ export class PixiBoard {
     // Метод для установки размера кисти/ластика
     setToolSize(size) {
         this.brushSize = size;
-        this.eraserSize = size; // ластик обычно толще
+        this.eraserSize = size;
+
+        // обновляем курсор даже без движения мыши
+        this._refreshCursorIfPossible();
     }
 
     // Метод для установки цвета кисти
     setBrushColor(color) {
         if (typeof color !== 'number') return;
         this.brushColor = color;
+
+        // обновляем курсор даже без движения мыши
+        this._refreshCursorIfPossible();
     }
 
+    // Рисуем курсор-индикатор размера (Pen: кольцо, Eraser: белый квадрат с чёрной обводкой)
+    _renderCursor(x, y) {
+        if (!this.cursorGraphics) return;
 
+        // если режим доски не рисование — очищаем курсор и выходим
+        if (this.mode !== 'draw' && this.mode !== 'erase') {
+            this.cursorGraphics.clear();
+            return;
+        }
+
+        this.cursorGraphics.clear();
+
+        if (this.mode === 'erase') {
+            // Eraser - белый квадрат с чёрной обводкой, размер = текущий size
+            const s = Math.max(2, this.eraserSize);
+            const h = s / 2;
+
+            // рисуем белый квадрат
+            this.cursorGraphics
+                .rect(x - h, y - h, s, s)
+                .fill(0xFFFFFF);
+
+
+            // рисуем чёрную обводку
+            this.cursorGraphics.setStrokeStyle({
+                width: 1,
+                color: 0x000000,
+            });
+
+
+            this.cursorGraphics
+                .rect(x - h, y - h, s, s)
+                .stroke();
+        } else {
+            // Pen - кольцо, размер = текущий size
+            const r = Math.max(2, this.brushSize / 2);
+
+            // рисуем кольцо
+            this.cursorGraphics.setStrokeStyle({
+                width: 1,
+                color: 0x000000,
+                alpha: 0.9,
+            });
+
+            this.cursorGraphics.circle(x, y, r).stroke();
+        }
+    }
+
+    // Обновляем курсор на последней позиции (когда меняем tool/size/color без движения мыши)
+    _refreshCursorIfPossible() {
+        if (!this.lastCursorPos) return;
+        this._renderCursor(this.lastCursorPos.x, this.lastCursorPos.y);
+    }
+
+    // Метод для уничтожения PixiJS Application и освобождения ресурсов
     destroy() {
         this.destroyRequested = true; // устанавливаем флаг запроса на уничтожение
 

@@ -9,16 +9,18 @@ export const Toolbar = ({
   brushColor,
   onBrushColorChange,
 }) => {
-  // Палитра как числа 0xRRGGBB (удобно для Pixi)
+  // Палитра как числа 0xRRGGBB
   const COLORS = [
     0x000000, // black (default)
-    0xffffff, // white
+    0x808080, // dark gray
     0xff0000, // red
+    0xFF7A00, // orange
+    0xffff00, // yellow
+    0x00ff00, // lime
     0x00a2ff, // blue
     0x00b050, // green
-    0xffc000, // yellow/orange
     0xff00ff, // magenta
-    0x7f7f7f, // gray
+    0x7A00FF, // purple
   ]
 
   const btnBase =

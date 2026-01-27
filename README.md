@@ -1,16 +1,89 @@
-# React + Vite
+# pixi-draw
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Учебный проект-шаблон: простая **paint-like** доска для рисования на **PixiJS v8**, где **React управляет состоянием и UI**, а **Pixi исполняет (canvas, события, графика)**.
 
-Currently, two official plugins are available:
+Цель проекта — закрепить правильную архитектуру *React ↔ Pixi* и иметь эталон, к которому можно вернуться через месяц и быстро всё вспомнить.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Стек
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Vite
+- React (JavaScript, без TypeScript)
+- Tailwind CSS v3
+- PixiJS v8
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Идея архитектуры
+
+**React → управляет**: хранит state (tool/size/color), показывает UI (Toolbar), вызывает методы ядра.
+
+**PixiJS → исполняет**: создает canvas, обрабатывает pointer-события, рисует Graphics.
+
+Ключевое правило: **PixiBoard — НЕ React-компонент**. Это императивный класс (как “движок”).
+
+```
+Toolbar.jsx (UI)  →  CanvasStage.jsx (adapter/state)  →  PixiBoard.js (core)
+```
+
+Подробно: см. [`docs/PIXIDRAW_MEMO.md`](docs/PIXIDRAW_MEMO.md).
+
+---
+
+## Запуск проекта
+
+```bash
+npm install
+npm run dev
+```
+
+Открой адрес из консоли (обычно http://localhost:5173).
+
+---
+
+## Реализованный функционал
+
+- Toolbar (верхняя панель + ribbon)
+- Инструменты:
+  - Pen
+  - Eraser (частичное стирание поверх уже нарисованного)
+  - Clear
+- Один общий **size slider** для Pen и Eraser
+- Палитра 10 цветов (classic Paint vibe), дефолт — **чёрный**
+- Cursor-indicator размера инструмента:
+  - Pen → кольцо
+  - Eraser → белый квадрат с чёрной обводкой
+- Курсор:
+  - обновляется при `pointermove`
+  - **реагирует на смену tool/size/color без движения мыши** (через сохранение последней позиции)
+
+---
+
+## Для кого
+
+- Для обучения PixiJS v8 “с нуля”
+- Для закрепления “правильной” связки **React UI → Pixi core**
+- Как reference/шаблон для будущих проектов Pixi + React (без сторонних библиотек)
+
+---
+
+## Структура проекта
+
+```
+src/
+  app/App.jsx
+  pixi/PixiBoard.js
+  ui/CanvasStage.jsx
+  ui/Toolbar.jsx
+  index.css
+  main.jsx
+docs/
+  PIXIDRAW_MEMO.md
+  assets/
+    architecture.png
+    dataflow.png
+```
+
+
+

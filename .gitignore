@@ -7,10 +7,22 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+
+# Build output (Vite)
+dist/
+dist-ssr/
+
+# Local-only files (often created by tooling)
 *.local
+.vite/
+.eslintcache
+
+# Environment variables
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
